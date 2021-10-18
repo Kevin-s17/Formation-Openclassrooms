@@ -1,0 +1,772 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: AWS CloudFormation infrastructure Template
+Resources:
+
+############################################################################
+#                               Partie Réseaux                             #
+############################################################################
+
+#Création du VPC
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.0.0.0/16
+      Tags:
+        - Key: Name
+          Value: MainVPC
+
+#Création de la passerelle Internet
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+    DependsOn: VPC
+    Properties:
+      Tags:
+        - Key: Name
+          Value: MainVPC InternetGateway
+
+#Attacher la passerelle Internet au VPC
+  AttachInternetGateway:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref VPC
+      InternetGatewayId: !Ref InternetGateway
+
+#Création IP élastic (EIP A)
+  NatEipA:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: VPC
+      Tags:
+        - Key: Name
+          Value: EIP A
+
+#Création IP élastic (EIP B)
+  NatEipB:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: VPC
+      Tags:
+        - Key: Name
+          Value: EIP B
+
+#Création IP élastic (EIP C)
+  NatEipC:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: VPC
+      Tags:
+        - Key: Name
+          Value: EIP C
+
+#Création de la passerelle NAT A
+  NatGatewayA:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      AllocationId: !GetAtt NatEipA.AllocationId
+      SubnetId: !Ref PublicSubnetA
+      Tags:
+        - Key: Name
+          Value: MainVPC NatGet A
+
+#Création de la passerelle NAT B
+  NatGatewayB:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      AllocationId: !GetAtt NatEipB.AllocationId
+      SubnetId: !Ref PublicSubnetB
+      Tags:
+        - Key: Name
+          Value: MainVPC NatGet B
+
+#Création de la passerelle NAT C
+  NatGatewayC:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      AllocationId: !GetAtt NatEipC.AllocationId
+      SubnetId: !Ref PublicSubnetC
+      Tags:
+        - Key: Name
+          Value: MainVPC NatGet C
+
+#Création du sous réseau public A
+  PublicSubnetA:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: eu-west-3a
+      CidrBlock: 10.0.10.0/24
+      Tags:
+        - Key: Name
+          Value: AZ A
+      VpcId: !Ref VPC
+
+#Création du sous réseau public B
+  PublicSubnetB:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: eu-west-3b
+      CidrBlock: 10.0.100.0/24
+      Tags:
+        - Key: Name
+          Value: AZ B
+      VpcId: !Ref VPC
+
+#Création du sous réseau public C
+  PublicSubnetC:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: eu-west-3c
+      CidrBlock: 10.0.0.0/24
+      Tags:
+        - Key: Name
+          Value: AZ C
+      VpcId: !Ref VPC
+
+#Création du sous réseau privé A
+  PrivateSubnetA:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: eu-west-3a
+      CidrBlock: 10.0.11.0/24
+      Tags:
+        - Key: Name
+          Value: AZ Private A
+      VpcId: !Ref VPC
+
+#Création du sous réseau privé B
+  PrivateSubnetB:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: eu-west-3b
+      CidrBlock: 10.0.101.0/24
+      Tags:
+        - Key: Name
+          Value: AZ Private B
+      VpcId: !Ref VPC
+
+#Création du sous réseau privé C 
+  PrivateSubnetC:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: eu-west-3c
+      CidrBlock: 10.0.1.0/24
+      Tags:
+        - Key: Name
+          Value: AZ Private C
+      VpcId: !Ref VPC
+
+#Création de la table de routage publique A
+  PublicRouteTableA:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      Tags:
+        - Key: Name
+          Value: Table de routage publique A
+      VpcId: !Ref VPC
+
+#Création de la table de routage publique B
+  PublicRouteTableB:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      Tags:
+        - Key: Name
+          Value: Table de routage publique B
+      VpcId: !Ref VPC
+
+#Création de la table de routage publique C
+  PublicRouteTableC:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      Tags:
+        - Key: Name
+          Value: Table de routage publique C
+      VpcId: !Ref VPC
+
+#Création de la table de routage privée A
+  PrivateRouteTableA:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+      - Key: Name
+        Value: Table de routage privée A
+
+#Création de la table de routage privée B
+  PrivateRouteTableB:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+      - Key: Name
+        Value: Table de routage privée B
+
+#Création de la table de routage privée C
+  PrivateRouteTableC:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+      - Key: Name
+        Value: Table de routage privée C
+
+#Attacher la table de routage A au sous réseau public A
+  AttachPublicRouteTableA:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PublicRouteTableA
+      SubnetId: !Ref PublicSubnetA
+
+#Attacher la table de routage B au sous réseau public B
+  AttachPublicRouteTableB:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PublicRouteTableB
+      SubnetId: !Ref PublicSubnetB
+
+#Attacher la table de routage C au sous réseau public C
+  AttachPublicRouteTableC:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PublicRouteTableC
+      SubnetId: !Ref PublicSubnetC
+
+#Attacher la table de routage A au sous réseau privée A
+  AttachPrivateRouteTableA:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    DependsOn:
+      - PrivateSubnetA
+      - PrivateRouteTableA
+    Properties:
+      RouteTableId: !Ref PrivateRouteTableA
+      SubnetId: !Ref PrivateSubnetA
+
+#Attacher la table de routage B au sous réseau privée B
+  AttachPrivateRouteTableB:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    DependsOn:
+      - PrivateSubnetB
+      - PrivateRouteTableB
+    Properties:
+      RouteTableId: !Ref PrivateRouteTableB
+      SubnetId: !Ref PrivateSubnetB
+
+#Attacher la table de routage C au sous réseau privée C
+  AttachPrivateRouteTableC:
+    DependsOn:
+      - PrivateSubnetC
+      - PrivateRouteTableC
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PrivateRouteTableC
+      SubnetId:
+        !Ref PrivateSubnetC
+
+#Route Public A ver la passerelle interne
+  PublicRouteA:
+    Type: AWS::EC2::Route
+    DependsOn: AttachInternetGateway
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+      RouteTableId: !Ref PublicRouteTableA
+
+#Route Public B ver la passerelle interne
+  PublicRouteB:
+    Type: AWS::EC2::Route
+    DependsOn: AttachInternetGateway
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+      RouteTableId: !Ref PublicRouteTableB
+
+#Route Public C ver la passerelle interne
+  PublicRouteC:
+    Type: AWS::EC2::Route
+    DependsOn: AttachInternetGateway
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+      RouteTableId: !Ref PublicRouteTableC
+
+#Route privée A vers NAT A
+  PrivateRouteA:
+    Type: AWS::EC2::Route
+    DependsOn: NatGatewayA
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NatGatewayA
+      RouteTableId: !Ref PrivateRouteTableA
+
+#Route privée B vers NAT B
+  PrivateRouteB:
+    Type: AWS::EC2::Route
+    DependsOn: NatGatewayB
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NatGatewayB
+      RouteTableId: !Ref PrivateRouteTableB
+
+#Route privée C vers NAT C
+  PrivateRouteC:
+    Type: AWS::EC2::Route
+    DependsOn: NatGatewayC
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NatGatewayC
+      RouteTableId: !Ref PrivateRouteTableC
+
+############################################################################
+#                               Partie Réseau VPN                          #
+############################################################################
+
+#Create Customer Gateway
+  LanGateway: 
+    Type: AWS::EC2::CustomerGateway
+    Properties: 
+        Type: ipsec.1
+        BgpAsn: 65000
+        IpAddress: 78.123.91.84
+        Tags:
+        - Key: Name
+          Value: Lan Gateway
+
+#Create VPN Gateway
+  VPNGateway: 
+    Type: AWS::EC2::VPNGateway
+    Properties: 
+      Type: ipsec.1
+      Tags:
+        - Key: Name
+          Value: VPN Gateway
+
+#Create Attach VPN Gateway
+  AttachVpnGateway:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref VPC
+      VpnGatewayId:
+        !Ref VPNGateway
+
+#Create VPN Connexion
+  VPNConnection: 
+    Type: AWS::EC2::VPNConnection
+    Properties: 
+      Type: ipsec.1
+      StaticRoutesOnly: true
+      CustomerGatewayId: 
+        !Ref LanGateway
+      VpnGatewayId: 
+        !Ref VPNGateway
+      VpnTunnelOptionsSpecifications: 
+        - PreSharedKey: AXS5125_1dzdcreAZ
+      Tags:
+        - Key: Name
+          Value: VPN Connection
+
+#Create VPN Connection Route
+  VPNConnectionRoute: 
+    Type: AWS::EC2::VPNConnectionRoute
+    Properties: 
+      DestinationCidrBlock: 192.168.1.0/24
+      VpnConnectionId: 
+        !Ref VPNConnection
+
+#Route privée C vers VPNGateway
+  LocalRoute:
+    Type: AWS::EC2::Route
+    DependsOn: AttachVpnGateway
+    Properties:
+      DestinationCidrBlock: 192.168.1.0/24
+      GatewayId: !Ref VPNGateway
+      RouteTableId: !Ref PrivateRouteTableC
+
+############################################################################
+#                              Partie S3                                   #
+############################################################################
+
+#Création de Bucket S3   
+  S3Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: p10s3bucket
+
+#Create IAM
+  S3Role:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+            Action: sts:AssumeRole
+      Path: /
+      Policies:
+        - PolicyName: Log_S3
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action: s3:*
+                Resource: 
+                  - arn:aws:s3:::p10bucket
+                  - arn:aws:s3:::p10bucket/*
+
+  WpInstanceProfile:
+    Type: 'AWS::IAM::InstanceProfile'
+    Properties:
+      Path: /
+      Roles:
+        - !Ref S3Role
+
+############################################################################
+#                          Partie groupes                                  #
+############################################################################
+
+#LoabBalancer Security Group
+  LBSG:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: EC2 security group
+      SecurityGroupEgress:
+        - IpProtocol: '-1'
+          CidrIp: 0.0.0.0/0
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: LoadBalancerSG
+
+#Wordpress Security Group
+  WordpressSG:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Enable HTTP/SSH access on port 80/22
+      SecurityGroupEgress:
+        - IpProtocol: '-1'
+          CidrIp: 0.0.0.0/0
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          SourceSecurityGroupId: !Ref LBSG
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          SourceSecurityGroupId: !Ref LBSG
+      Tags:
+        - Key: Name
+          Value: Wordpress Security Group
+      VpcId: !Ref VPC
+
+#Database Security Group
+  DatabaseSG:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Open database for access
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 3306
+          ToPort: 3306
+          SourceSecurityGroupId: !Ref WordpressSG
+      Tags:
+          - Key: Name
+            Value: Database Security Group
+      VpcId: !Ref VPC
+
+#Creation Database Subnet Group
+  DatabaseSubnetGroup:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties:
+      DBSubnetGroupDescription: Subnet Group for RDS database
+      SubnetIds: 
+        - !Ref PrivateSubnetA
+        - !Ref PrivateSubnetB
+      Tags:
+        - Key: Name
+          Value: Database Subnets
+
+#Local Security Groupe
+  LocalSG:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Enable ICMP/HTTP access on port 80/22
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
+      SecurityGroupIngress:
+        - IpProtocol: icmp
+          FromPort: -1
+          ToPort: -1
+          CidrIp: 192.168.1.0/24
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 192.168.1.0/24
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 192.168.1.0/24
+      Tags:
+        - Key: Name
+          Value: Local Security Group
+      VpcId: !Ref VPC
+
+#Création Wordpress Auto Scaling Group
+  WordpressScalingGroup:
+    Type: AWS::AutoScaling::AutoScalingGroup
+    Properties: 
+      LaunchConfigurationName: !Ref Wordpress
+      AvailabilityZones:
+        - Fn::Select:
+            - 0
+            - Fn::GetAZs: !Ref AWS::Region
+        - Fn::Select:
+            - 1
+            - Fn::GetAZs: !Ref AWS::Region   
+      VPCZoneIdentifier:
+        - !Ref PrivateSubnetA
+        - !Ref PrivateSubnetB
+      DesiredCapacity: '2'
+      MinSize: '2'
+      MaxSize: '3'
+      Cooldown: '300'
+      HealthCheckType: EC2 
+      HealthCheckGracePeriod: 300
+      TargetGroupARNs:
+        - !Ref ELBTargetGroup
+      Tags:
+        - Key: Name
+          Value: WordpressScalingGroup
+          PropagateAtLaunch: true
+
+#Création groupe cible
+  ELBTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      Port: 80
+      Protocol: HTTP
+      HealthCheckEnabled: true
+      VpcId: !Ref VPC
+      HealthCheckIntervalSeconds: 40
+      HealthCheckPath: /
+      HealthCheckTimeoutSeconds: 10
+      HealthyThresholdCount: 4
+      TargetGroupAttributes:
+        - Key: stickiness.enabled
+          Value: 'true'
+      Matcher:
+        HttpCode: '200'
+      UnhealthyThresholdCount: 2
+      Tags:
+        - Key: Name
+          Value: ELBTargetGroup
+
+############################################################################
+#                              Partie Instances                            #
+############################################################################
+
+#Création de wordpress
+  Wordpress:
+    Type: AWS::AutoScaling::LaunchConfiguration
+    DependsOn: Database
+    Properties:
+      IamInstanceProfile: !Ref WpInstanceProfile
+      ImageId: ami-0f7cd40eac2214b37
+      InstanceType: t2.micro
+      KeyName: aws-key
+      SecurityGroups:
+        - !Ref WordpressSG
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          sudo apt update
+          sudo apt upgrade -y
+          sudo mkdir /etc/wordpress
+          sudo apt install unzip docker-compose mariadb-client awscli docker.io -y
+          sudo usermod -aG docker ubuntu
+          sudo systemctl start docker
+          sudo systemctl enable docker
+          cd /etc/wordpress
+          docker run --name wordpress -e WORDPRESS_DB_HOST=${Database.Endpoint.Address} -e WORDPRESS_DB_USER=wordpress -e WORDPRESS_DB_PASSWORD=wordpress -e WORDPRESS_DB_NAME=wordpress -p 80:80 -d wordpress
+          docker exec wordpress curl -O https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar
+          docker exec wordpress php wp-cli.phar --allow-root core install --url=${ElasticLoadBalancer.DNSName} --title="Projet 10" --admin_user=wordpress --admin_email=lightekev17@gmail.com --admin_password=wordpress --skip-email
+          sleep 10
+          docker exec wordpress php wp-cli.phar --allow-root plugin install amazon-s3-and-cloudfront  --activate --force
+          docker exec wordpress php wp-cli.phar --allow-root user update wordpress --user_pass="wordpress"
+
+#Création base de donnée
+  Database:
+    Type: AWS::RDS::DBInstance
+    Properties:
+      AllocatedStorage: '20'
+      AvailabilityZone:
+        Fn::Select:
+          - 0
+          - Fn::GetAZs: !Ref AWS::Region
+      DBInstanceIdentifier: wpbdd
+      DBSubnetGroupName: !Ref DatabaseSubnetGroup
+      DBName: wordpress
+      Engine: MariaDB
+      MasterUsername: wordpress
+      MasterUserPassword: wordpress
+      DBInstanceClass: db.t2.micro
+      MultiAZ: false
+      PubliclyAccessible: false
+      VPCSecurityGroups:
+        - !Ref DatabaseSG
+
+#Création réplica de la base de donnée
+  ReplicaDB:
+    Type: AWS::RDS::DBInstance
+    Properties:
+      DBInstanceIdentifier: wpbddreplica
+      SourceDBInstanceIdentifier: !Ref Database
+      DBInstanceClass: db.t2.micro
+      AvailabilityZone:
+        Fn::Select:
+          - 1
+          - Fn::GetAZs: !Ref AWS::Region
+
+#Création Intranet
+  Intranet:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: ami-000311a1d85fc1ede
+      InstanceType: t2.micro
+      KeyName: aws-key
+      AvailabilityZone: eu-west-3c
+      NetworkInterfaces:
+        - AssociatePublicIpAddress: false
+          DeviceIndex: 0
+          GroupSet:
+            - !Ref LocalSG
+          PrivateIpAddress: 10.0.1.10
+          SubnetId: !Ref PrivateSubnetC
+      Tags:
+        - Key: Name
+          Value: Intranet          
+      UserData:
+        Fn::Base64: !Sub |
+           #!/bin/bash
+           sleep 120
+           sudo apt-get update
+           sudo apt-get install apache2  -y
+           sudo echo "<p>Bienvenue sur la page HTML du Projet 10</p>" > /var/www/html/index.html
+
+############################################################################
+#                              Partie mise à l'échelle                     #
+############################################################################
+
+#Création ScalingUpPolicy
+  WordpressScalingUpPolicy:
+    Type: AWS::AutoScaling::ScalingPolicy
+    Properties:
+      AdjustmentType: ChangeInCapacity
+      AutoScalingGroupName: !Ref WordpressScalingGroup
+      ScalingAdjustment: 1
+
+#Création ScalingDownPolicy
+  WordpressScalingDownPolicy:
+    Type: AWS::AutoScaling::ScalingPolicy
+    Properties:
+      AdjustmentType: ChangeInCapacity
+      AutoScalingGroupName: !Ref WordpressScalingGroup
+      ScalingAdjustment: -1
+
+#Création alarme haute
+  CPUAlarmHigh:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: Alarm if CPU > 80% for 5 minutes
+      MetricName: CPUUtilization
+      Namespace: AWS/EC2
+      Statistic: Average
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 80
+      AlarmActions:
+        - !Ref WordpressScalingUpPolicy
+        - !Ref NotificationTopic
+      Dimensions:
+        - Name: AutoScalingGroupName
+          Value:
+            Ref: WordpressScalingGroup
+      ComparisonOperator: GreaterThanThreshold
+
+#Création alarme basse
+  CPUAlarmLow:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: Alarm if CPU < 50% for 5 minutes
+      MetricName: CPUUtilization
+      Namespace: AWS/EC2
+      Statistic: Average
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 50
+      AlarmActions:
+        - !Ref WordpressScalingDownPolicy
+        - !Ref NotificationTopic
+      Dimensions:
+        - Name: AutoScalingGroupName
+          Value:
+            Ref: WordpressScalingGroup
+      ComparisonOperator: LessThanThreshold
+
+############################################################################
+#                              Partie Notifications                        #
+############################################################################
+
+#Création Notification
+  NotificationTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      Subscription:
+        - Endpoint: lightekev17@gmail.com
+          Protocol: email
+
+############################################################################
+#                          Partie équilibreur de charge                    #
+############################################################################
+
+#Création équilibreur de charge  
+  ElasticLoadBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Type: application
+      Scheme: internet-facing
+      SecurityGroups:
+        - !Ref LBSG
+      Subnets:
+        - !Ref PublicSubnetA
+        - !Ref PublicSubnetB
+      Tags:
+        - Key: Name
+          Value: ElasticLoadBalancer
+
+#Création Listener  
+  ELBlistener:
+   Type: AWS::ElasticLoadBalancingV2::Listener
+   Properties:
+      LoadBalancerArn: !Ref ElasticLoadBalancer
+      Port: 80
+      Protocol: HTTP
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref ELBTargetGroup
+
+############################################################################
+#                                  OUTPUTS                                 #
+############################################################################
+
+Outputs:
+  ElasticLoadBalancerDnsName:
+    Description: Elastic Load Balancer DNS Name
+    Export:
+      Name: !Sub ${AWS::StackName}-ElasticLoadBalancerDnsName
+    Value: !GetAtt ElasticLoadBalancer.DNSName
